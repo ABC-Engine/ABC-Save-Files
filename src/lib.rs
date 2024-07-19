@@ -2,18 +2,18 @@ use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SaveFile {
+pub struct SaveFile {
     map: FxHashMap<String, Vec<u8>>,
 }
 
 impl SaveFile {
-    fn new() -> Self {
+    pub fn new() -> Self {
         SaveFile {
             map: FxHashMap::default(),
         }
     }
 
-    fn add_component<'a, T>(&mut self, key: String, value: T) -> Result<(), serde_json::Error>
+    pub fn add_component<'a, T>(&mut self, key: String, value: T) -> Result<(), serde_json::Error>
     where
         T: Serialize + Deserialize<'a>,
     {
@@ -24,7 +24,7 @@ impl SaveFile {
         Ok(())
     }
 
-    fn get_component<'a, T>(&'a self, key: &str) -> Result<T, serde_json::Error>
+    pub fn get_component<'a, T>(&'a self, key: &str) -> Result<T, serde_json::Error>
     where
         T: Serialize + Deserialize<'a>,
     {
@@ -35,7 +35,7 @@ impl SaveFile {
         Ok(deserialized)
     }
 
-    fn save_to_file(&self, path: &str) -> Result<(), std::io::Error> {
+    pub fn save_to_file(&self, path: &str) -> Result<(), std::io::Error> {
         let serialized = serde_json::to_string(&self)?;
 
         std::fs::write(path, serialized)?;
@@ -43,7 +43,7 @@ impl SaveFile {
         Ok(())
     }
 
-    fn load_from_file(path: &str) -> Result<Self, std::io::Error> {
+    pub fn load_from_file(path: &str) -> Result<Self, std::io::Error> {
         let serialized = std::fs::read_to_string(path)?;
 
         let deserialized: SaveFile = serde_json::from_str(&serialized)?;
