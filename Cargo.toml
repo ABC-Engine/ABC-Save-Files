@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = "1.0.204"
-erased-serde = "0.4.5"
 serde_json = "1.0.120"
+rustc-hash = "2.0.0"
+serde = { version = "1.0.204", features = ["derive"] }
 
 [dev-dependencies]
-serde = { version = "1.0.204", features = ["derive"] }
+rand = "0.8.4"
