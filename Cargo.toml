@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 serde_json = "1.0.120"
 rustc-hash = "2.0.0"
-serde = { version = "=1.0.194", features = ["derive"] }
+serde = { version = "1.0.204", features = ["derive"] }
 
 [dev-dependencies]
 rand = "0.8.4"
