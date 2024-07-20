@@ -1,16 +1,24 @@
+use std::{fs::create_dir_all, io};
+
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SaveFile {
     map: FxHashMap<String, Vec<u8>>,
+    org_name: String,
 }
 
 impl SaveFile {
-    pub fn new() -> Self {
+    pub fn new(orginization_name: String) -> Self {
         SaveFile {
             map: FxHashMap::default(),
+            org_name: orginization_name,
         }
+    }
+
+    pub fn set_organization(&mut self, name: String) {
+        self.org_name = name;
     }
 
     pub fn add_component<'a, T>(&mut self, key: String, value: T) -> Result<(), serde_json::Error>
@@ -35,16 +43,38 @@ impl SaveFile {
         Ok(deserialized)
     }
 
-    pub fn save_to_file(&self, path: &str) -> Result<(), std::io::Error> {
+    pub fn get_save_dir(&self) -> String {
+        let data_dir = match dirs::data_dir() {
+            Some(path) => {
+                // should never be none because it would have to be invalid unicode
+                path.to_str()
+                    .expect("data dir from 'dirs' crate is invalid")
+                    .to_string()
+            }
+            None => "".to_string(),
+        };
+
+        let new_path = data_dir.to_string() + "/" + &self.org_name;
+
+        new_path
+    }
+
+    pub fn save_to_file(&self, path: &str) -> std::io::Result<()> {
         let serialized = serde_json::to_string(&self)?;
 
-        std::fs::write(path, serialized)?;
+        let new_path = self.get_save_dir() + "/" + path;
+        // if the new path doesn't exist create it
+        create_dir_all(new_path.clone())?;
+
+        std::fs::write(new_path, serialized)?;
 
         Ok(())
     }
 
-    pub fn load_from_file(path: &str) -> Result<Self, std::io::Error> {
-        let serialized = std::fs::read_to_string(path)?;
+    pub fn load_from_file(&self, path: &str) -> Result<Self, std::io::Error> {
+        let new_path = self.get_save_dir() + "/" + path;
+
+        let serialized = std::fs::read_to_string(new_path)?;
 
         let deserialized: SaveFile = serde_json::from_str(&serialized)?;
 
@@ -60,7 +90,7 @@ mod tests {
 
     #[test]
     fn test_save_file() {
-        let mut save_file = SaveFile::new();
+        let mut save_file = SaveFile::new("ABC-Save-File-Testing".to_string());
 
         let key = "player health".to_string();
         let value = 100;
@@ -80,7 +110,7 @@ mod tests {
             mana: i32,
         }
 
-        let mut save_file = SaveFile::new();
+        let mut save_file = SaveFile::new("ABC-Save-File-Testing".to_string());
 
         let key = "player".to_string();
         let value = Player {
@@ -99,7 +129,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_save_file_mismatched_types() {
-        let mut save_file = SaveFile::new();
+        let mut save_file = SaveFile::new("ABC-Save-File-Testing".to_string());
 
         let bool_key = "boolean value".to_string();
         let bool_value = true;
@@ -120,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_many_values() {
-        let mut save_file = SaveFile::new();
+        let mut save_file = SaveFile::new("ABC-Save-File-Testing".to_string());
 
         for i in 0..10000 {
             let key = format!("key {}", i);
@@ -136,7 +166,7 @@ mod tests {
 
     #[test]
     fn test_saving_to_file() {
-        let mut save_file = SaveFile::new();
+        let mut save_file = SaveFile::new("ABC-Save-File-Testing".to_string());
 
         let mut key_value_pairs = vec![];
 
@@ -151,9 +181,12 @@ mod tests {
         }
 
         let path = "save_file.json";
+        println!("Saving to file: {}", save_file.get_save_dir());
         save_file.save_to_file(path).unwrap();
 
-        let loaded_save_file = SaveFile::load_from_file(path).unwrap();
+        let loaded_save_file = SaveFile::new("ABC-Save-File-Testing".to_string())
+            .load_from_file(path)
+            .unwrap();
 
         for (key, value) in key_value_pairs {
             let deserialized: i32 = loaded_save_file.get_component(&key).unwrap();
