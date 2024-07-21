@@ -1,4 +1,7 @@
-use std::{fs::create_dir_all, io};
+use std::{
+    fs::{create_dir_all, OpenOptions},
+    io::{self, Write},
+};
 
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
@@ -62,11 +65,24 @@ impl SaveFile {
     pub fn save_to_file(&self, path: &str) -> std::io::Result<()> {
         let serialized = serde_json::to_string(&self)?;
 
-        let new_path = self.get_save_dir() + "/" + path;
-        // if the new path doesn't exist create it
-        create_dir_all(new_path.clone())?;
+        let folder = self.get_save_dir();
 
-        std::fs::write(new_path, serialized)?;
+        // if the new path doesn't exist create it
+        create_dir_all(folder.clone())?;
+
+        let new_path = folder + "\\" + path;
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(new_path.clone())?;
+
+        println!("Opened file: {}", new_path);
+
+        file.write_all(serialized.as_bytes())?;
+
+        //std::fs::write(new_path, serialized)?;
+        println!("Wrote to file");
 
         Ok(())
     }
